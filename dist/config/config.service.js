@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WEB_CLIENT_ID = exports.REFRESH_TOKEN_SECRET_KEY = exports.TOKEN_SECRET_KEY = exports.REDIS_URL = exports.PASSWORD = exports.EMAIL = exports.IV_LENGTH = exports.ENCRYPTION_KEY = exports.SALT_ROUNDS = exports.MONGO_URI = exports.PORT = void 0;
+const path_1 = require("path");
+const dotenv_1 = require("dotenv");
+const NODE_ENV = process.env.NODE_ENV;
+(0, dotenv_1.config)({ path: (0, path_1.resolve)(__dirname, `../../.env.${NODE_ENV}`) });
+exports.PORT = Number(process.env.PORT) || 3000;
+exports.MONGO_URI = process.env.MONGO_URI;
+exports.SALT_ROUNDS = Number(process.env.SALT_ROUNDS);
+exports.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+exports.IV_LENGTH = Number(process.env.IV_LENGTH);
+exports.EMAIL = process.env.EMAIL;
+exports.PASSWORD = process.env.PASSWORD;
+exports.REDIS_URL = process.env.REDIS_URL;
+exports.TOKEN_SECRET_KEY = process.env.TOKEN_SECRET_KEY;
+exports.REFRESH_TOKEN_SECRET_KEY = process.env.REFRESH_TOKEN_SECRET_KEY;
+exports.WEB_CLIENT_ID = process.env.WEB_CLIENT_ID;
