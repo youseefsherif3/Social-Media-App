@@ -1,4 +1,5 @@
 //* Importing necessary modules and types
+import e from "express";
 import { GenderEnum } from "../../common/enum/user.enum";
 import * as z from "zod";
 
@@ -34,6 +35,13 @@ export const confirmEmailSchema = {
   }),
 };
 
+//* Validation schema for the Resend OTP API
+export const resendOTPSchema = {
+  body: z.object({
+    email: z.string().email(),
+  }),
+};
+
 //* Validation schema for the Login API
 export const loginSchema = {
   body: z.object({
@@ -50,12 +58,15 @@ export const updatePasswordSchema = {
       newPassword: z.string().min(6),
       confirmNewPassword: z.string().min(6),
     })
-    .refine((data) => {
-      return data.newPassword === data.confirmNewPassword;
-    }, {
-      message: "New passwords do not match",
-      path: ["confirmNewPassword"],
-    }),
+    .refine(
+      (data) => {
+        return data.newPassword === data.confirmNewPassword;
+      },
+      {
+        message: "New passwords do not match",
+        path: ["confirmNewPassword"],
+      },
+    ),
 };
 
 //* Validation schema for the Reset Password API
@@ -67,16 +78,20 @@ export const resetPasswordSchema = {
       newPassword: z.string().min(6),
       confirmNewPassword: z.string().min(6),
     })
-    .refine((data) => {
-      return data.newPassword === data.confirmNewPassword;
-    }, {
-      message: "New passwords do not match",
-      path: ["confirmNewPassword"],
-    }),
+    .refine(
+      (data) => {
+        return data.newPassword === data.confirmNewPassword;
+      },
+      {
+        message: "New passwords do not match",
+        path: ["confirmNewPassword"],
+      },
+    ),
 };
 
 export type ISignUpType = z.infer<typeof signUpSchema.body>;
 export type IConfirmEmailType = z.infer<typeof confirmEmailSchema.body>;
+export type IResendOTPType = z.infer<typeof resendOTPSchema.body>;
 export type ILoginType = z.infer<typeof loginSchema.body>;
 export type IUpdatePasswordType = z.infer<typeof updatePasswordSchema.body>;
 export type IResetPasswordType = z.infer<typeof resetPasswordSchema.body>;

@@ -47,6 +47,7 @@ const authRouter = (0, express_1.Router)();
 authRouter.post("/signUp", (0, validation_1.validation)(userValidation.signUpSchema), auth_service_1.default.signUp);
 authRouter.post("/signUp/google", auth_service_1.default.signUpWithGoogle);
 authRouter.patch("/confirm-email", (0, validation_1.validation)(userValidation.confirmEmailSchema), auth_service_1.default.confirmEmail);
+authRouter.patch("/resend-otp", (0, validation_1.validation)(userValidation.resendOTPSchema), auth_service_1.default.resendOTP);
 authRouter.post("/login", (0, validation_1.validation)(userValidation.loginSchema), auth_service_1.default.login);
 authRouter.get("/profile", authentication_1.default.authentication, (0, authorization_1.authorization)(user_enum_1.RoleEnum.user), auth_service_1.default.getProfile);
 authRouter.get("/refresh-token", auth_service_1.default.refreshToken);

@@ -9,15 +9,51 @@ const encrypt_security_1 = require("../../common/utils/security/encrypt.security
 const hashing_security_1 = require("../../common/utils/security/hashing.security");
 const send_email_1 = require("../../common/utils/email/send.email");
 const email_template_1 = require("../../common/utils/email/email.template");
-const redis_service_1 = require("../../DB/redis/redis.service");
 const user_enum_1 = require("../../common/enum/user.enum");
-const token_service_1 = require("../../common/utils/token.service");
 const config_service_1 = require("../../config/config.service");
 const google_auth_library_1 = require("google-auth-library");
 const crypto_1 = require("crypto");
+const redis_service_1 = __importDefault(require("../../common/service/redis.service"));
+const email_events_1 = require("../../common/utils/email/email.events");
+const token_service_1 = __importDefault(require("../../common/utils/token.service"));
 class AuthService {
     _userModel = new user_repository_1.default();
+    _redisService = redis_service_1.default;
+    _tokenService = token_service_1.default;
     constructor() { }
+    sendEmailOtp = async ({ email, userName, }) => {
+        const isBlocked = await this._redisService.checkTTLMethod(this._redisService.block_OTP_Key(email));
+        if (isBlocked && isBlocked > 0) {
+            throw new global_error_handling_1.AppError("Too many OTP requests, please try again later", 429);
+        }
+        const ttlOtp = await this._redisService.checkTTLMethod(this._redisService.OTP_Key(email));
+        if (ttlOtp && ttlOtp > 0) {
+            throw new global_error_handling_1.AppError("OTP already sent, please check your email or request a new OTP after some time", 429);
+        }
+        if ((await this._redisService.getMethod(this._redisService.OTP_Key(email))) >=
+            3) {
+            await this._redisService.setMethod({
+                key: this._redisService.block_OTP_Key(email),
+                value: "1",
+                ttl: 60 * 60,
+            });
+            throw new global_error_handling_1.AppError("Too many OTP requests, please try again later", 429);
+        }
+        const OTP = await (0, send_email_1.generateOTP)();
+        email_events_1.Eventemitter.emit(user_enum_1.EmailEnum.verification, async () => {
+            await (0, send_email_1.sendEmail)({
+                to: email,
+                subject: "Verify Your Email for Social Connect",
+                html: (0, email_template_1.emailTemplate)(OTP, userName),
+            });
+            await this._redisService.setMethod({
+                key: this._redisService.OTP_Key(email),
+                value: (0, hashing_security_1.HashPassword)({ plainText: OTP.toString() }),
+                ttl: 10 * 60,
+            });
+            await this._redisService.incrMethod(this._redisService.max_OTP_Key(email));
+        });
+    };
     signUp = async (req, res, next) => {
         let { userName, email, password, confirmPassword, age, gender, address, phone, } = req.body;
         const existingUser = await this._userModel.findOne({ filter: { email } });
@@ -32,17 +68,20 @@ class AuthService {
             gender,
             address,
             phone: phone ? (0, encrypt_security_1.EncryptData)(phone) : null,
+            changeCredentials: new Date(),
         });
         const OTP = await (0, send_email_1.generateOTP)();
-        await (0, send_email_1.sendEmail)({
-            to: email,
-            subject: "Verify Your Email for Social Connect",
-            html: (0, email_template_1.emailTemplate)(OTP, userName),
-        });
-        await (0, redis_service_1.setMethod)({
-            key: (0, redis_service_1.OTP_Key)(email),
-            value: (0, hashing_security_1.HashPassword)({ plainText: OTP.toString() }),
-            ttl: 10 * 60,
+        email_events_1.Eventemitter.emit(user_enum_1.EmailEnum.verification, async () => {
+            await (0, send_email_1.sendEmail)({
+                to: email,
+                subject: "Verify Your Email for Social Connect",
+                html: (0, email_template_1.emailTemplate)(OTP, userName),
+            });
+            await this._redisService.setMethod({
+                key: this._redisService.OTP_Key(email),
+                value: (0, hashing_security_1.HashPassword)({ plainText: OTP.toString() }),
+                ttl: 10 * 60,
+            });
         });
         res
             .status(201)
@@ -72,7 +111,7 @@ class AuthService {
             throw new global_error_handling_1.AppError("Email already in use, please use a different email or log in with your credentials", 409);
         }
         const jwtid = (0, crypto_1.randomUUID)();
-        const token = (0, token_service_1.generateToken)({
+        const token = this._tokenService.generateToken({
             payload: { userId: user._id, email: user.email },
             secret_key: config_service_1.TOKEN_SECRET_KEY,
             options: { expiresIn: "1h", jwtid },
@@ -83,7 +122,7 @@ class AuthService {
     };
     confirmEmail = async (req, res, next) => {
         let { email, OTP } = req.body;
-        const OTPExists = await (0, redis_service_1.getMethod)((0, redis_service_1.OTP_Key)(email));
+        const OTPExists = await this._redisService.getMethod(this._redisService.OTP_Key(email));
         if (!OTPExists) {
             throw new global_error_handling_1.AppError("OTP has expired, please request a new one", 400);
         }
@@ -97,8 +136,25 @@ class AuthService {
         if (!user) {
             throw new global_error_handling_1.AppError("User not found, please check the email and try again", 404);
         }
-        await (0, redis_service_1.deleteMethod)((0, redis_service_1.OTP_Key)(email));
+        await this._redisService.deleteMethod(this._redisService.OTP_Key(email));
         res.status(200).json({ message: "Email confirmed successfully" });
+    };
+    resendOTP = async (req, res, next) => {
+        const { email } = req.body;
+        const user = await this._userModel.findOne({
+            filter: {
+                email,
+                confirmed: false,
+                provider: user_enum_1.ProviderEnum.local,
+            },
+        });
+        if (!user) {
+            throw new global_error_handling_1.AppError("User not found or already confirmed, please check the email and try again", 404);
+        }
+        await this.sendEmailOtp({ email, userName: user.userName });
+        res.status(200).json({
+            message: "OTP resent successfully, please check your email",
+        });
     };
     login = async (req, res, next) => {
         let { email, password } = req.body;
@@ -115,12 +171,12 @@ class AuthService {
             throw new global_error_handling_1.AppError("Invalid email or password, please check your credentials and try again", 401);
         }
         const jwtid = (0, crypto_1.randomUUID)();
-        const token = (0, token_service_1.generateToken)({
+        const token = this._tokenService.generateToken({
             payload: { userId: user._id, email: user.email },
             secret_key: config_service_1.TOKEN_SECRET_KEY,
             options: { expiresIn: "1h", jwtid },
         });
-        const refreshToken = (0, token_service_1.generateToken)({
+        const refreshToken = this._tokenService.generateToken({
             payload: { userId: user._id, email: user.email },
             secret_key: config_service_1.REFRESH_TOKEN_SECRET_KEY,
             options: { expiresIn: "1y", jwtid },
@@ -137,7 +193,7 @@ class AuthService {
         if (!authorization) {
             throw new global_error_handling_1.AppError("Unauthorized access, please provide a valid refresh token", 401);
         }
-        const decoded = (0, token_service_1.verifyToken)({
+        const decoded = this._tokenService.verifyToken({
             token: authorization,
             secret_key: config_service_1.REFRESH_TOKEN_SECRET_KEY,
         });
@@ -149,7 +205,7 @@ class AuthService {
             throw new global_error_handling_1.AppError("Unauthorized access, user associated with the token not found", 401);
         }
         const jwtid = (0, crypto_1.randomUUID)();
-        const token = (0, token_service_1.generateToken)({
+        const token = this._tokenService.generateToken({
             payload: { userId: user._id, email: user.email },
             secret_key: config_service_1.TOKEN_SECRET_KEY,
             options: { expiresIn: "1h", jwtid },
@@ -184,8 +240,8 @@ class AuthService {
             subject: "Reset Your Password for Social Connect",
             html: (0, email_template_1.emailTemplate)(OTP, user.userName),
         });
-        await (0, redis_service_1.setMethod)({
-            key: (0, redis_service_1.OTP_Key)(email),
+        await this._redisService.setMethod({
+            key: this._redisService.OTP_Key(email),
             value: (0, hashing_security_1.HashPassword)({ plainText: OTP.toString() }),
             ttl: 10 * 60,
         });
@@ -201,7 +257,7 @@ class AuthService {
         if (!user) {
             throw new global_error_handling_1.AppError("User Not Found, please check the email and try again", 404);
         }
-        const OTPExists = await (0, redis_service_1.getMethod)((0, redis_service_1.OTP_Key)(email));
+        const OTPExists = await this._redisService.getMethod(this._redisService.OTP_Key(email));
         if (!OTPExists) {
             throw new global_error_handling_1.AppError("OTP has expired, please request a new one", 400);
         }
@@ -212,7 +268,7 @@ class AuthService {
             filter: { email },
             update: { password: (0, hashing_security_1.HashPassword)({ plainText: newPassword }) },
         });
-        await (0, redis_service_1.deleteMethod)((0, redis_service_1.OTP_Key)(email));
+        await this._redisService.deleteMethod(this._redisService.OTP_Key(email));
         res.status(200).json({ message: "Password reset successfully" });
     };
     logout = async (req, res, next) => {
@@ -221,10 +277,10 @@ class AuthService {
         if (flag === user_enum_1.FlagEnum.allDevices) {
             request.user.changeCredentials = new Date();
             await request.user.save();
-            await (0, redis_service_1.deleteMethod)(await (0, redis_service_1.keys)(`revokedTokens:${request.user._id.toString()}`));
+            await this._redisService.deleteMethod(await this._redisService.keys(`revokedTokens:${request.user._id.toString()}`));
         }
         else {
-            await (0, redis_service_1.setMethod)({
+            await this._redisService.setMethod({
                 key: `revokedTokens:${request.user._id.toString()}:${request.decoded.jti}`,
                 value: `${request.decoded.jti}`,
                 ttl: Math.max(request.decoded.exp - Math.floor(Date.now() / 1000), 1),

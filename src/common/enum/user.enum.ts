@@ -18,3 +18,8 @@ export enum FlagEnum {
   allDevices = "allDevices",
   currentDevice = "currentDevice"
 };
+
+export enum EmailEnum {
+  verification = "verification",
+  passwordReset = "passwordReset",
+}

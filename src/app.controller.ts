@@ -11,9 +11,7 @@ import {
 } from "./common/utils/global_error_handling";
 import authRouter from "./modules/auth/auth.controller";
 import { connectDB } from "./DB/connectionDB";
-import { connectRedis } from "./DB/redis/redis.connection";
-
-
+import redisService from "./common/service/redis.service";
 
 //* Setting up application and port
 const app: express.Application = express();
@@ -48,7 +46,7 @@ const bootstrap = () => {
   connectDB();
 
   //* The Connection to the Redis server
-  connectRedis();
+  redisService.connect();
 
   //* Using the auth router for handling authentication-related routes
   app.use("/auth", authRouter);

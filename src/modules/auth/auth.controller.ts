@@ -23,6 +23,9 @@ authRouter.post("/signUp/google", authService.signUpWithGoogle);
 //* The Email Confirmation API
 authRouter.patch("/confirm-email", validation(userValidation.confirmEmailSchema), authService.confirmEmail);
 
+//* The Resend OTP API
+authRouter.patch("/resend-otp", validation(userValidation.resendOTPSchema), authService.resendOTP);
+
 //* The Login API
 authRouter.post("/login", validation(userValidation.loginSchema), authService.login);
 
