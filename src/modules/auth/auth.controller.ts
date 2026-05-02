@@ -2,7 +2,7 @@
 import { Router, RequestHandler } from "express";
 import authService from "./auth.service";
 import { validation } from "../../common/middleware/validation";
-import * as userValidation from "./user.validation";
+import * as userValidation from "./auth.validation";
 import AuthenticationMiddleware from "../../common/middleware/authentication";
 import { authorization } from "../../common/middleware/authorization";
 import { RoleEnum } from "../../common/enum/user.enum";
@@ -29,9 +29,6 @@ authRouter.patch("/resend-otp", validation(userValidation.resendOTPSchema), auth
 //* The Login API
 authRouter.post("/login", validation(userValidation.loginSchema), authService.login);
 
-//* The Get Profile API
-authRouter.get("/profile", AuthenticationMiddleware.authentication,authorization(RoleEnum.user) ,authService.getProfile);
-
 //* The Refresh Token API
 authRouter.get("/refresh-token", authService.refreshToken);
 
@@ -46,7 +43,6 @@ authRouter.post("/reset-password", validation(userValidation.resetPasswordSchema
 
 //* The Logout API
 authRouter.post("/logout", AuthenticationMiddleware.authentication, authService.logout);
-
 
 //* exporting the router to be used in other parts of the application
 export default authRouter;

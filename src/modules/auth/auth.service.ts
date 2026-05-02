@@ -9,7 +9,7 @@ import {
   IResetPasswordType,
   ISignUpType,
   IUpdatePasswordType,
-} from "./user.validation";
+} from "./auth.validation";
 import { AppError } from "../../common/utils/global_error_handling";
 import UserRepository from "../../DB/repositories/user.repository ";
 import { EncryptData } from "../../common/utils/security/encrypt.security";
@@ -116,7 +116,7 @@ class AuthService {
 
     //* Checking if a user with the provided email already exists in the database
     const existingUser: HydratedDocument<IUser> | null =
-      await this._userModel.findOne({ filter: { email } });
+      await this._userModel.findOne({ filter: { email }  });
     if (existingUser) {
       throw new AppError(
         "Email already in use, please use a different email",
@@ -290,7 +290,7 @@ class AuthService {
 
     //* Checking if a user with the provided email exists in the database
     const user: HydratedDocument<IUser> | null = await this._userModel.findOne({
-      filter: { email, confirmed: true, provider: ProviderEnum.local },
+      filter: { email, confirmed: true, provider: ProviderEnum.local , paranoid: true},
     });
 
     if (!user) {
@@ -331,15 +331,6 @@ class AuthService {
     });
 
     res.status(200).json({ message: "Login successful", token, refreshToken });
-  };
-
-  //* The Get Profile API endpoint to retrieve the authenticated user's profile information
-  getProfile = async (req: Request, res: Response, next: NextFunction) => {
-    const request = req as any;
-
-    const user: HydratedDocument<IUser> = request.user;
-
-    res.status(200).json({ message: "Profile retrieved successfully", user });
   };
 
   //* The Refresh Token API endpoint to generate a new JWT token using a valid refresh token
@@ -418,7 +409,7 @@ class AuthService {
     const { email }: { email: string } = req.body;
 
     const user: HydratedDocument<IUser> | null = await this._userModel.findOne({
-      filter: { email, confirmed: true, provider: ProviderEnum.local },
+      filter: { email, confirmed: true, provider: ProviderEnum.local , paranoid: true},
     });
 
     if (!user) {
@@ -452,7 +443,7 @@ class AuthService {
     let { email, OTP, newPassword }: IResetPasswordType = req.body;
 
     const user: HydratedDocument<IUser> | null = await this._userModel.findOne({
-      filter: { email, confirmed: true, provider: ProviderEnum.local },
+      filter: { email, confirmed: true, provider: ProviderEnum.local , paranoid: true},
     });
 
     if (!user) {

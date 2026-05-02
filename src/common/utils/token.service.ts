@@ -1,11 +1,12 @@
+//* Importing necessary modules and types
 import jwt, {
   JwtPayload,
   Secret,
   SignOptions,
   VerifyOptions,
 } from "jsonwebtoken";
-import de from "zod/v4/locales/de.js";
 
+//* TokenService class to handle JWT token generation and verification */
 class TokenService {
   constructor() {}
   //* Utility function to generate a JWT token

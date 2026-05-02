@@ -12,6 +12,7 @@ const global_error_handling_1 = require("./common/utils/global_error_handling");
 const auth_controller_1 = __importDefault(require("./modules/auth/auth.controller"));
 const connectionDB_1 = require("./DB/connectionDB");
 const redis_service_1 = __importDefault(require("./common/service/redis.service"));
+const user_controller_1 = __importDefault(require("./modules/users/user.controller"));
 const app = (0, express_1.default)();
 const port = config_service_1.PORT;
 const bootstrap = () => {
@@ -32,6 +33,7 @@ const bootstrap = () => {
     (0, connectionDB_1.connectDB)();
     redis_service_1.default.connect();
     app.use("/auth", auth_controller_1.default);
+    app.use("/users", user_controller_1.default);
     app.use("{/*demo}", (req, res, next) => {
         throw new global_error_handling_1.AppError(`Can't find ${req.originalUrl} on this server! , please check the URL and try again.`, 404);
     });

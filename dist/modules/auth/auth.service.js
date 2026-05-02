@@ -159,7 +159,7 @@ class AuthService {
     login = async (req, res, next) => {
         let { email, password } = req.body;
         const user = await this._userModel.findOne({
-            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local },
+            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local, paranoid: true },
         });
         if (!user) {
             throw new global_error_handling_1.AppError("Invalid email or password, please check your credentials and try again", 401);
@@ -182,11 +182,6 @@ class AuthService {
             options: { expiresIn: "1y", jwtid },
         });
         res.status(200).json({ message: "Login successful", token, refreshToken });
-    };
-    getProfile = async (req, res, next) => {
-        const request = req;
-        const user = request.user;
-        res.status(200).json({ message: "Profile retrieved successfully", user });
     };
     refreshToken = async (req, res, next) => {
         const { authorization } = req.headers;
@@ -229,7 +224,7 @@ class AuthService {
     forgotPassword = async (req, res, next) => {
         const { email } = req.body;
         const user = await this._userModel.findOne({
-            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local },
+            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local, paranoid: true },
         });
         if (!user) {
             throw new global_error_handling_1.AppError("User Not Found, please check the email and try again", 404);
@@ -252,7 +247,7 @@ class AuthService {
     resetPassword = async (req, res, next) => {
         let { email, OTP, newPassword } = req.body;
         const user = await this._userModel.findOne({
-            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local },
+            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local, paranoid: true },
         });
         if (!user) {
             throw new global_error_handling_1.AppError("User Not Found, please check the email and try again", 404);

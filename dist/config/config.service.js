@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WEB_CLIENT_ID = exports.REFRESH_TOKEN_SECRET_KEY = exports.TOKEN_SECRET_KEY = exports.REDIS_URL = exports.PASSWORD = exports.EMAIL = exports.IV_LENGTH = exports.ENCRYPTION_KEY = exports.SALT_ROUNDS = exports.MONGO_URI = exports.PORT = void 0;
+exports.AWS_BUCKET_NAME = exports.AWS_REGION = exports.AWS_SECRET_KEY = exports.AWS_ACCESS_KEY = exports.WEB_CLIENT_ID = exports.REFRESH_TOKEN_SECRET_KEY = exports.TOKEN_SECRET_KEY = exports.REDIS_URL = exports.PASSWORD = exports.EMAIL = exports.IV_LENGTH = exports.ENCRYPTION_KEY = exports.SALT_ROUNDS = exports.MONGO_URI = exports.PORT = void 0;
 const path_1 = require("path");
 const dotenv_1 = require("dotenv");
 const NODE_ENV = process.env.NODE_ENV;
@@ -16,3 +16,7 @@ exports.REDIS_URL = process.env.REDIS_URL;
 exports.TOKEN_SECRET_KEY = process.env.TOKEN_SECRET_KEY;
 exports.REFRESH_TOKEN_SECRET_KEY = process.env.REFRESH_TOKEN_SECRET_KEY;
 exports.WEB_CLIENT_ID = process.env.WEB_CLIENT_ID;
+exports.AWS_ACCESS_KEY = process.env.AWS_ACCESS_KEY;
+exports.AWS_SECRET_KEY = process.env.AWS_SECRET_KEY;
+exports.AWS_REGION = process.env.AWS_REGION;
+exports.AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME;

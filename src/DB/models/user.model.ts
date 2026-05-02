@@ -1,6 +1,10 @@
 //* Import necessary modules and Types
 import mongoose, { Types } from "mongoose";
-import { GenderEnum, ProviderEnum, RoleEnum } from "../../common/enum/user.enum";
+import {
+  GenderEnum,
+  ProviderEnum,
+  RoleEnum,
+} from "../../common/enum/user.enum";
 
 //* Defining the IUser interface to represent the structure of a user document in MongoDB
 export interface IUser {
@@ -15,9 +19,11 @@ export interface IUser {
   address?: string;
   gender?: GenderEnum;
   role?: RoleEnum;
-  provider? : ProviderEnum;
+  provider?: ProviderEnum;
   confirmed: boolean;
   changeCredentials?: Date;
+  deletedAt?: string;
+  profileImage?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -90,6 +96,12 @@ const userSchema = new mongoose.Schema<IUser>(
     changeCredentials: {
       type: Date,
     },
+    deletedAt: {
+      type: String,
+    },
+    profileImage: {
+      type: String,
+    },
   },
   {
     timestamps: true,
@@ -109,6 +121,17 @@ userSchema
   .set(function (val: string) {
     this.set({ firstName: val.split(" ")[0], lastName: val.split(" ")[1] });
   });
+
+//* Adding a pre 'findOne' middleware to handle soft deletion by checking the 'paranoid' query parameter
+userSchema.pre("findOne", function () {
+  const { paranoid, ...rest } = this.getQuery();
+
+  if (paranoid === false) {
+    this.setQuery({ ...rest });
+  } else {
+    this.setQuery({ ...rest, deletedAt: { $exists: false } });
+  }
+});
 
 //* Creating the user model based on the schema
 const userModel =

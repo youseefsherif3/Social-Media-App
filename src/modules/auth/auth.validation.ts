@@ -1,5 +1,4 @@
 //* Importing necessary modules and types
-import e from "express";
 import { GenderEnum } from "../../common/enum/user.enum";
 import * as z from "zod";
 

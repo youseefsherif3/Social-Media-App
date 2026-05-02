@@ -12,6 +12,8 @@ import {
 import authRouter from "./modules/auth/auth.controller";
 import { connectDB } from "./DB/connectionDB";
 import redisService from "./common/service/redis.service";
+import userModel from "./DB/models/user.model";
+import userRouter from "./modules/users/user.controller";
 
 //* Setting up application and port
 const app: express.Application = express();
@@ -50,6 +52,9 @@ const bootstrap = () => {
 
   //* Using the auth router for handling authentication-related routes
   app.use("/auth", authRouter);
+
+  //* Using the user router for handling user-related routes
+  app.use("/users", userRouter);
 
   //* Invalid route handling
   app.use("{/*demo}", (req: Request, res: Response, next: NextFunction) => {

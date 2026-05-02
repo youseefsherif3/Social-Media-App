@@ -71,6 +71,12 @@ const userSchema = new mongoose_1.default.Schema({
     changeCredentials: {
         type: Date,
     },
+    deletedAt: {
+        type: String,
+    },
+    profileImage: {
+        type: String,
+    },
 }, {
     timestamps: true,
     strictQuery: true,
@@ -85,6 +91,15 @@ userSchema
 })
     .set(function (val) {
     this.set({ firstName: val.split(" ")[0], lastName: val.split(" ")[1] });
+});
+userSchema.pre("findOne", function () {
+    const { paranoid, ...rest } = this.getQuery();
+    if (paranoid === false) {
+        this.setQuery({ ...rest });
+    }
+    else {
+        this.setQuery({ ...rest, deletedAt: { $exists: false } });
+    }
 });
 const userModel = mongoose_1.default.models.User || mongoose_1.default.model("User", userSchema);
 exports.default = userModel;
