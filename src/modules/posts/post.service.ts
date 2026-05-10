@@ -10,9 +10,9 @@ import { randomUUID } from "crypto";
 import { Store_Enum } from "../../common/enum/multer.enum";
 import UserRepository from "../../DB/repositories/user.repository ";
 import notificationService from "../../common/service/notification.service";
-import { AvailabilityEnum } from "../../common/enum/post.enum";
+import { AvailabilityEnum, DeleteEnum } from "../../common/enum/post.enum";
 import { AvailabilityPost } from "../../common/utils/post.utils";
-import th from "zod/v4/locales/th.js";
+import CommentRepository from "../../DB/repositories/comment.repository";
 
 //* AuthService class to handle authentication-related operations such as sign-up, login, etc
 class PostService {
@@ -20,6 +20,7 @@ class PostService {
   private readonly _postModel = new PostRepository();
   private readonly _S3Service = new S3Service();
   private readonly _userRepository = new UserRepository();
+  private readonly _commentModel = new CommentRepository();
   private readonly _redisService = redisService;
   private readonly _notificationService = notificationService;
 
@@ -276,6 +277,76 @@ class PostService {
     await post.save();
 
     res.status(200).json({ message: "Post updated successfully", post });
+  };
+
+  //* The deletePost method to handle the logic for deleting a post
+  deletePost = async (req: Request, res: Response, next: NextFunction) => {
+    const { postId } = req.params;
+    const { flag } = req.query;
+    const request = req as any;
+
+    //* Check if the post exists and belongs to the logged in user
+    const post = await this._postModel.findOne({
+      filter: {
+        _id: postId,
+        createdBy: request.user._id,
+      },
+    });
+
+    if (!post) {
+      throw new AppError("Post not found", 404);
+    }
+
+    if (flag === DeleteEnum.soft) {
+      post.IsDeleted = true;
+
+      await post.save();
+
+      await this._commentModel.updateMany({
+        filter: {
+          postId: post._id,
+        },
+        update: {
+          IsDeleted: true,
+        },
+      });
+
+      return res.status(200).json({ message: "Post deleted successfully" });
+    }
+
+    //* Check if there are comments on the post, if yes, delete them
+    const comments = await this._commentModel.find({
+      filter: {
+        postId: post._id,
+      },
+    });
+
+    for (const comment of comments) {
+      if (comment.attachments?.length) {
+        await this._S3Service.deleteFiles(comment.attachments);
+      }
+    }
+
+    //* Delete post attachments from S3
+    if (post.attachments?.length) {
+      await this._S3Service.deleteFiles(post.attachments);
+    }
+
+    //* Delete all comments related to the post
+    await this._commentModel.deleteMany({
+      filter: {
+        postId: post._id,
+      },
+    });
+
+    //* Delete the post itself
+    await this._postModel.findOneAndDelete({
+      filter: {
+        _id: postId,
+      },
+    });
+
+    res.status(200).json({ message: "Post deleted successfully" });
   };
 }
 

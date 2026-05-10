@@ -43,5 +43,12 @@ postRouter.put(
   PostService.updatePost,
 );
 
+//* The Delete Post API endpoint
+postRouter.delete(
+  "/delete-post/:postId",
+  AuthenticationMiddleware.authentication,
+  PostService.deletePost,
+);
+
 //* exporting the router to be used in other parts of the application
 export default postRouter;

@@ -16,6 +16,7 @@ export interface IPost {
   allowComment?: AllowCommentEnum;
   availability?: AvailabilityEnum;
   folderId: string;
+  IsDeleted?: boolean;
 }
 
 //* Defining the Post schema using Mongoose
@@ -66,6 +67,10 @@ const PostSchema = new mongoose.Schema<IPost>(
     folderId: {
       type: String,
     },
+    IsDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -77,15 +82,9 @@ const PostSchema = new mongoose.Schema<IPost>(
 );
 
 //* Adding a pre 'findOne' middleware to handle soft deletion by checking the 'paranoid' query parameter
-// PostSchema.pre("findOne", function () {
-//   const { paranoid, ...rest } = this.getQuery();
-
-//   if (paranoid === false) {
-//     this.setQuery({ ...rest });
-//   } else {
-//     this.setQuery({ ...rest, deletedAt: { $exists: false } });
-//   }
-// });
+PostSchema.pre("find", function() {
+  this.where({ IsDeleted: false });
+})
 
 //* Creating the Post model based on the schema
 const PostModel =

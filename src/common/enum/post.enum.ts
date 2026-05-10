@@ -19,3 +19,8 @@ export enum ReactionEnum {
   angry = "angry",
   wow = "wow"
 }
+
+export enum DeleteEnum {
+  soft = "soft",
+  hard = "hard",
+}

@@ -15,7 +15,7 @@ import redisService from "./common/service/redis.service";
 import userModel from "./DB/models/user.model";
 import userRouter from "./modules/users/user.controller";
 import postRouter from "./modules/posts/post.controller";
-import { log } from "console";
+import commentRouter from "./modules/comments/comment.controller";
 
 //* Setting up application and port
 const app: express.Application = express();
@@ -60,6 +60,9 @@ const bootstrap = () => {
 
   //* Using the post router for handling post-related routes
   app.use("/posts", postRouter);
+
+  //* Using the comment router for handling comment-related routes
+  app.use("/comments", commentRouter);
 
   app.post("/send-notification", async (req: Request, res: Response, next: NextFunction) => {
     console.log("Sending notification..." , req.body.token);

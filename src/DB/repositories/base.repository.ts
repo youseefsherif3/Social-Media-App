@@ -1,5 +1,6 @@
 //* Importing necessary modules and types
 import {
+  DeleteResult,
   HydratedDocument,
   Model,
   PopulateOptions,
@@ -80,6 +81,11 @@ abstract class BaseRepository<TDocument> {
     return this.model.findByIdAndUpdate(id, update, { new: true, ...options });
   }
 
+  //* Method to delete many documents based on a filter
+  async deleteMany({ filter }: { filter: QueryFilter<TDocument> }) {
+    return this.model.deleteMany(filter);
+  }
+
   //* Method to find a document by a specific field and value and update it with new data
   async findOneAndUpdate({
     filter,
@@ -116,6 +122,18 @@ abstract class BaseRepository<TDocument> {
     options?: QueryOptions<TDocument>;
   }): Promise<HydratedDocument<TDocument> | null> {
     return this.model.findOneAndDelete(filter, options);
+  }
+
+  async updateMany({
+    filter,
+    update,
+    options,
+  }: {
+    filter: QueryFilter<TDocument>;
+    update: UpdateQuery<TDocument>;
+    options?: QueryOptions<TDocument>;
+  }): Promise<any> {
+    return this.model.updateMany(filter, update, options as any);
   }
 
   //* Method to paginate through documents based on a filter, sort, and search criteria

@@ -14,6 +14,7 @@ const connectionDB_1 = require("./DB/connectionDB");
 const redis_service_1 = __importDefault(require("./common/service/redis.service"));
 const user_controller_1 = __importDefault(require("./modules/users/user.controller"));
 const post_controller_1 = __importDefault(require("./modules/posts/post.controller"));
+const comment_controller_1 = __importDefault(require("./modules/comments/comment.controller"));
 const app = (0, express_1.default)();
 const port = config_service_1.PORT;
 const bootstrap = () => {
@@ -36,6 +37,7 @@ const bootstrap = () => {
     app.use("/auth", auth_controller_1.default);
     app.use("/users", user_controller_1.default);
     app.use("/posts", post_controller_1.default);
+    app.use("/comments", comment_controller_1.default);
     app.post("/send-notification", async (req, res, next) => {
         console.log("Sending notification...", req.body.token);
     });

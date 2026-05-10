@@ -28,6 +28,9 @@ class BaseRepository {
     async findByIdAndUpdate({ id, update, options, }) {
         return this.model.findByIdAndUpdate(id, update, { new: true, ...options });
     }
+    async deleteMany({ filter }) {
+        return this.model.deleteMany(filter);
+    }
     async findOneAndUpdate({ filter, update, options, }) {
         return this.model.findOneAndUpdate(filter, update, {
             new: true,
@@ -39,6 +42,9 @@ class BaseRepository {
     }
     async findOneAndDelete({ filter, options, }) {
         return this.model.findOneAndDelete(filter, options);
+    }
+    async updateMany({ filter, update, options, }) {
+        return this.model.updateMany(filter, update, options);
     }
     async paginate({ page, limit, sort, search, }) {
         page = +page || 1;
