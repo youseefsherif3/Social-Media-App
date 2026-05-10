@@ -26,6 +26,18 @@ abstract class BaseRepository<TDocument> {
     return this.model.findById(id);
   }
 
+  async find({
+    filter,
+    projection,
+    options,
+  }: {
+    filter: QueryFilter<TDocument>;
+    projection?: ProjectionType<TDocument>;
+    options?: QueryOptions<TDocument>;
+  }): Promise<HydratedDocument<TDocument>[]> {
+    return this.model.find(filter, projection, options);
+  }
+
   //* Method to find a document by a specific field and value
   async findOne({
     filter,
@@ -104,6 +116,47 @@ abstract class BaseRepository<TDocument> {
     options?: QueryOptions<TDocument>;
   }): Promise<HydratedDocument<TDocument> | null> {
     return this.model.findOneAndDelete(filter, options);
+  }
+
+  //* Method to paginate through documents based on a filter, sort, and search criteria
+  async paginate({
+    page,
+    limit,
+    sort,
+    search,
+  }: {
+    page?: number;
+    limit?: number;
+    sort?: any;
+    search?: QueryFilter<TDocument>;
+  }) {
+    page = +page! || 1;
+    limit = +limit! || 10;
+
+    if (page < 1) page = 1;
+    if (limit < 1) limit = 10;
+
+    const skip = (page - 1) * limit;
+
+    const [data, totalDocs] = await Promise.all([
+      await this.model
+        .find({ ...(search ?? {}) })
+        .skip(skip)
+        .limit(limit)
+        .sort(sort)
+        .exec(),
+      await this.model.countDocuments({ ...(search ?? {}) }),
+    ]);
+
+    return {
+      meta: {
+        currentPage: page,
+        limit,
+        totalDocs,
+        totalPages: Math.ceil(totalDocs / limit),
+      },
+      data,
+    };
   }
 }
 

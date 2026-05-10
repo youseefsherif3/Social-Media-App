@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 //* Importing necessary modules and types
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   ListObjectsV2Command,
   ObjectCannedACL,
@@ -136,6 +137,7 @@ export class S3Service {
         }),
       );
     }
+    return urls;
   }
 
   //* Method to create a pre-signed URL for uploading a file to S3, which can be used to allow clients to upload files directly to S3 without going through the server
@@ -171,7 +173,7 @@ export class S3Service {
     return await this.client.send(command);
   }
 
-  //* Method to get a pre-signed URL 
+  //* Method to get a pre-signed URL
   async getPreSignedUrl({
     Key,
     expiresIn = 60,
@@ -189,12 +191,11 @@ export class S3Service {
   }
 
   //* Method to get a list of files in a specific folder in S3
-  async getFiles(folderName : string) {
-
+  async getFiles(folderName: string) {
     const command = new ListObjectsV2Command({
       Bucket: AWS_BUCKET_NAME,
-      Prefix: `Social_Media_App/${folderName}/`
-    })
+      Prefix: `Social_Media_App/${folderName}/`,
+    });
 
     return await this.client.send(command);
   }
@@ -206,7 +207,34 @@ export class S3Service {
       Key,
     });
 
-    await this.client.send(command);
+    return await this.client.send(command);
   }
 
+  //* Method to delete multiple files from S3 using their keys
+  async deleteFiles(keys: string[]) {
+    const keyMapped = keys.map((key) => {
+      return { Key: key };
+    });
+
+    const command = new DeleteObjectsCommand({
+      Bucket: AWS_BUCKET_NAME,
+      Delete: {
+        Objects: keyMapped,
+      },
+    });
+    return await this.client.send(command);
+  }
+
+  //* Method to delete a folder from S3 by deleting all files within the folder
+  async deleteFolder(folderName: string) {
+    const files = await this.getFiles(folderName);
+
+    const keys = files?.Contents?.map((k) => {
+      return k.Key;
+    });
+
+    return await this.deleteFiles(keys as string[]);
+  }
+
+  
 }

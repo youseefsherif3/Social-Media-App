@@ -1,6 +1,7 @@
 //* Importing necessary modules and initializing the Redis client
 import { createClient } from "redis";
 import { REDIS_URL } from "../../config/config.service";
+import { Types } from "mongoose";
 
 //* RedisService class to handle interactions with the Redis server
 class RedisService {
@@ -124,9 +125,51 @@ class RedisService {
     }
   };
 
+  //* The OTP_Key Method Function To generate a Redis key for storing OTP values based on the user's email
   OTP_Key = (email: string) => {
     return `emailVerification:${email}`;
   };
+
+  key(userId: Types.ObjectId) {
+    return `user:FCM:${userId}`;
+  }
+
+  //* Method to add an FCM token to the Redis set for a specific user
+  async addFCM({
+    userId,
+    FCMToken,
+  }: {
+    userId: Types.ObjectId;
+    FCMToken: string;
+  }) {
+    return await this.client.sAdd(this.key(userId), FCMToken);
+  }
+
+  //* Method to remove an FCM token from the Redis set for a specific user
+  async removeFCM({
+    userId,
+    FCMToken,
+  }: {
+    userId: Types.ObjectId;
+    FCMToken: string;
+  }) {
+    return await this.client.sRem(this.key(userId), FCMToken);
+  }
+
+  //* Method to get all FCM tokens from the Redis set for a specific user
+  async getFCMs(userId: Types.ObjectId) {
+    return await this.client.sMembers(this.key(userId));
+  }
+
+  //* Method to check if there are any FCM tokens in the Redis set for a specific user
+  async hasFCMs(userId: Types.ObjectId) {
+    return await this.client.sCard(this.key(userId));
+  }
+
+  //* Method to remove all FCM tokens from the Redis set for a specific user, effectively clearing the set
+  async removeFCMUser(userId: Types.ObjectId) {
+    return await this.client.del(this.key(userId));
+  }
 }
 
 export default new RedisService();

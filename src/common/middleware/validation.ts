@@ -14,11 +14,24 @@ export const validation = (schema: ValidationSchema) => {
     for (const key of Object.keys(schema) as requestTypes[]) {
       //* If the schema does not have a validation rule for the current request type, skip to the next iteration
       if (!schema[key]) continue;
+
+      //* If the request contains a file or files, add them to the request body so that they can be validated by the schema
+      if (req.file) {
+        req.body.attachment = req.file;
+      }
+
+      if (req.files) {
+        req.body.attachments = req.files;
+      }
+
+      //* Validate the request data against the schema and if there are any validation errors, add them to the validationError array
       const result = schema[key].safeParse(req[key]);
       if (!result.success) {
         validationError.push(result.error.message);
       }
     }
+
+    //* If there are any validation errors, throw an AppError with the validation errors and a status code of 400 (Bad Request)
     if (validationError.length > 0) {
       throw new AppError(JSON.parse(validationError as unknown as string), 400);
     }

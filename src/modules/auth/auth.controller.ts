@@ -2,7 +2,8 @@
 import { Router, RequestHandler } from "express";
 import authService from "./auth.service";
 import { validation } from "../../common/middleware/validation";
-import * as userValidation from "./auth.validation";
+import * as authValidation
+ from "./auth.validation";
 import AuthenticationMiddleware from "../../common/middleware/authentication";
 import { authorization } from "../../common/middleware/authorization";
 import { RoleEnum } from "../../common/enum/user.enum";
@@ -13,7 +14,8 @@ const authRouter = Router();
 //* The Sign-Up API
 authRouter.post(
   "/signUp",
-  validation(userValidation.signUpSchema),
+  validation(authValidation
+    .signUpSchema),
   authService.signUp,
 );
 
@@ -21,25 +23,30 @@ authRouter.post(
 authRouter.post("/signUp/google", authService.signUpWithGoogle);
 
 //* The Email Confirmation API
-authRouter.patch("/confirm-email", validation(userValidation.confirmEmailSchema), authService.confirmEmail);
+authRouter.patch("/confirm-email", validation(authValidation
+  .confirmEmailSchema), authService.confirmEmail);
 
 //* The Resend OTP API
-authRouter.patch("/resend-otp", validation(userValidation.resendOTPSchema), authService.resendOTP);
+authRouter.patch("/resend-otp", validation(authValidation
+  .resendOTPSchema), authService.resendOTP);
 
 //* The Login API
-authRouter.post("/login", validation(userValidation.loginSchema), authService.login);
+authRouter.post("/login", validation(authValidation
+  .loginSchema), authService.login);
 
 //* The Refresh Token API
 authRouter.get("/refresh-token", authService.refreshToken);
 
 //* The Update Password API
-authRouter.patch("/update-password", AuthenticationMiddleware.authentication, validation(userValidation.updatePasswordSchema), authService.updatePassword);
+authRouter.patch("/update-password", AuthenticationMiddleware.authentication, validation(authValidation
+  .updatePasswordSchema), authService.updatePassword);
 
 //* The Forgot Password API
 authRouter.post("/forgot-password", authService.forgotPassword);
 
 //* The Reset Password API
-authRouter.post("/reset-password", validation(userValidation.resetPasswordSchema), authService.resetPassword);
+authRouter.post("/reset-password", validation(authValidation
+  .resetPasswordSchema), authService.resetPassword);
 
 //* The Logout API
 authRouter.post("/logout", AuthenticationMiddleware.authentication, authService.logout);

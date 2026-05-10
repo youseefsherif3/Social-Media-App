@@ -23,10 +23,6 @@ class UserService {
             ContentType,
             path: `Users/${request?.user?._id}`,
         });
-        await this._userModel.findOneAndUpdate({
-            filter: { _id: request?.user?._id },
-            update: { profileImage: Key },
-        });
         res.status(200).json({
             message: "Profile image uploaded successfully",
             data: { url, Key },

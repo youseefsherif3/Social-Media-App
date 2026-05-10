@@ -46,6 +46,7 @@ export const loginSchema = {
   body: z.object({
     email: z.string().email(),
     password: z.string().min(6),
+    fcm : z.string()
   }),
 };
 
@@ -88,6 +89,7 @@ export const resetPasswordSchema = {
     ),
 };
 
+//* Exporting TypeScript types for the request bodies of each API
 export type ISignUpType = z.infer<typeof signUpSchema.body>;
 export type IConfirmEmailType = z.infer<typeof confirmEmailSchema.body>;
 export type IResendOTPType = z.infer<typeof resendOTPSchema.body>;

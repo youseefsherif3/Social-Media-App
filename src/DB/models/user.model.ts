@@ -26,6 +26,7 @@ export interface IUser {
   profileImage?: string;
   createdAt: Date;
   updatedAt: Date;
+  friends?: Types.ObjectId[];
 }
 
 //* Defining the user schema using Mongoose
@@ -102,6 +103,12 @@ const userSchema = new mongoose.Schema<IUser>(
     profileImage: {
       type: String,
     },
+    friends : [
+      {
+        type: Types.ObjectId,
+        ref: "User",
+      },
+    ]
   },
   {
     timestamps: true,

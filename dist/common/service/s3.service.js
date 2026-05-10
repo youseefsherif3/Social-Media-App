@@ -67,6 +67,7 @@ class S3Service {
                 return this.uploadLargeFile({ file, store_type, path, ACL });
             }));
         }
+        return urls;
     }
     async createPreSignedUrl({ path, fileName, ContentType, expiresIn = 60, }) {
         const Key = `Social_Media_App/${path}/${(0, crypto_1.randomUUID)()}__${fileName}`;
@@ -96,7 +97,7 @@ class S3Service {
     async getFiles(folderName) {
         const command = new client_s3_1.ListObjectsV2Command({
             Bucket: config_service_1.AWS_BUCKET_NAME,
-            Prefix: `Social_Media_App/${folderName}/`
+            Prefix: `Social_Media_App/${folderName}/`,
         });
         return await this.client.send(command);
     }
@@ -105,7 +106,26 @@ class S3Service {
             Bucket: config_service_1.AWS_BUCKET_NAME,
             Key,
         });
-        await this.client.send(command);
+        return await this.client.send(command);
+    }
+    async deleteFiles(keys) {
+        const keyMapped = keys.map((key) => {
+            return { Key: key };
+        });
+        const command = new client_s3_1.DeleteObjectsCommand({
+            Bucket: config_service_1.AWS_BUCKET_NAME,
+            Delete: {
+                Objects: keyMapped,
+            },
+        });
+        return await this.client.send(command);
+    }
+    async deleteFolder(folderName) {
+        const files = await this.getFiles(folderName);
+        const keys = files?.Contents?.map((k) => {
+            return k.Key;
+        });
+        return await this.deleteFiles(keys);
     }
 }
 exports.S3Service = S3Service;

@@ -13,6 +13,7 @@ const auth_controller_1 = __importDefault(require("./modules/auth/auth.controlle
 const connectionDB_1 = require("./DB/connectionDB");
 const redis_service_1 = __importDefault(require("./common/service/redis.service"));
 const user_controller_1 = __importDefault(require("./modules/users/user.controller"));
+const post_controller_1 = __importDefault(require("./modules/posts/post.controller"));
 const app = (0, express_1.default)();
 const port = config_service_1.PORT;
 const bootstrap = () => {
@@ -34,6 +35,10 @@ const bootstrap = () => {
     redis_service_1.default.connect();
     app.use("/auth", auth_controller_1.default);
     app.use("/users", user_controller_1.default);
+    app.use("/posts", post_controller_1.default);
+    app.post("/send-notification", async (req, res, next) => {
+        console.log("Sending notification...", req.body.token);
+    });
     app.use("{/*demo}", (req, res, next) => {
         throw new global_error_handling_1.AppError(`Can't find ${req.originalUrl} on this server! , please check the URL and try again.`, 404);
     });

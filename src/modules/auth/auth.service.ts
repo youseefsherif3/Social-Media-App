@@ -31,6 +31,7 @@ import redisService from "../../common/service/redis.service";
 import { Eventemitter } from "../../common/utils/email/email.events";
 import tokenService from "../../common/utils/token.service";
 import { log } from "console";
+import notificationService from "../../common/service/notification.service";
 
 //* AuthService class to handle authentication-related operations such as sign-up, login, etc
 class AuthService {
@@ -38,6 +39,7 @@ class AuthService {
   private readonly _userModel = new UserRepository();
   private readonly _redisService = redisService;
   private readonly _tokenService = tokenService;
+  private readonly _notificationService = notificationService;
 
   constructor() {}
 
@@ -116,7 +118,7 @@ class AuthService {
 
     //* Checking if a user with the provided email already exists in the database
     const existingUser: HydratedDocument<IUser> | null =
-      await this._userModel.findOne({ filter: { email }  });
+      await this._userModel.findOne({ filter: { email } });
     if (existingUser) {
       throw new AppError(
         "Email already in use, please use a different email",
@@ -286,11 +288,16 @@ class AuthService {
 
   //* The Login API endpoint to authenticate a user and generate a JWT token
   login = async (req: Request, res: Response, next: NextFunction) => {
-    let { email, password }: ILoginType = req.body;
+    let { email, password, fcm }: ILoginType = req.body;
 
     //* Checking if a user with the provided email exists in the database
     const user: HydratedDocument<IUser> | null = await this._userModel.findOne({
-      filter: { email, confirmed: true, provider: ProviderEnum.local , paranoid: true},
+      filter: {
+        email,
+        confirmed: true,
+        provider: ProviderEnum.local,
+        paranoid: true,
+      },
     });
 
     if (!user) {
@@ -329,6 +336,19 @@ class AuthService {
       secret_key: REFRESH_TOKEN_SECRET_KEY,
       options: { expiresIn: "1y", jwtid },
     });
+
+    if (fcm) {
+      await this._redisService.addFCM({ userId: user._id, FCMToken: fcm });
+      const fcmTokens = await this._redisService.getFCMs(user._id);
+
+      await this._notificationService.sendNotifications({
+        tokens: fcmTokens,
+        data: {
+          title: `Welcome Back ${user.userName}`,
+          body: `We Detected a Login to Your Account, At ${new Date()} If This Wasn't You, Please Secure Your Account`,
+        },
+      });
+    }
 
     res.status(200).json({ message: "Login successful", token, refreshToken });
   };
@@ -409,7 +429,12 @@ class AuthService {
     const { email }: { email: string } = req.body;
 
     const user: HydratedDocument<IUser> | null = await this._userModel.findOne({
-      filter: { email, confirmed: true, provider: ProviderEnum.local , paranoid: true},
+      filter: {
+        email,
+        confirmed: true,
+        provider: ProviderEnum.local,
+        paranoid: true,
+      },
     });
 
     if (!user) {
@@ -443,7 +468,12 @@ class AuthService {
     let { email, OTP, newPassword }: IResetPasswordType = req.body;
 
     const user: HydratedDocument<IUser> | null = await this._userModel.findOne({
-      filter: { email, confirmed: true, provider: ProviderEnum.local , paranoid: true},
+      filter: {
+        email,
+        confirmed: true,
+        provider: ProviderEnum.local,
+        paranoid: true,
+      },
     });
 
     if (!user) {

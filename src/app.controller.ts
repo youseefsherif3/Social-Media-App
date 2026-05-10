@@ -14,6 +14,8 @@ import { connectDB } from "./DB/connectionDB";
 import redisService from "./common/service/redis.service";
 import userModel from "./DB/models/user.model";
 import userRouter from "./modules/users/user.controller";
+import postRouter from "./modules/posts/post.controller";
+import { log } from "console";
 
 //* Setting up application and port
 const app: express.Application = express();
@@ -55,6 +57,13 @@ const bootstrap = () => {
 
   //* Using the user router for handling user-related routes
   app.use("/users", userRouter);
+
+  //* Using the post router for handling post-related routes
+  app.use("/posts", postRouter);
+
+  app.post("/send-notification", async (req: Request, res: Response, next: NextFunction) => {
+    console.log("Sending notification..." , req.body.token);
+  });
 
   //* Invalid route handling
   app.use("{/*demo}", (req: Request, res: Response, next: NextFunction) => {

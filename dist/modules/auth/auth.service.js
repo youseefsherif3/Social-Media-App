@@ -16,10 +16,12 @@ const crypto_1 = require("crypto");
 const redis_service_1 = __importDefault(require("../../common/service/redis.service"));
 const email_events_1 = require("../../common/utils/email/email.events");
 const token_service_1 = __importDefault(require("../../common/utils/token.service"));
+const notification_service_1 = __importDefault(require("../../common/service/notification.service"));
 class AuthService {
     _userModel = new user_repository_1.default();
     _redisService = redis_service_1.default;
     _tokenService = token_service_1.default;
+    _notificationService = notification_service_1.default;
     constructor() { }
     sendEmailOtp = async ({ email, userName, }) => {
         const isBlocked = await this._redisService.checkTTLMethod(this._redisService.block_OTP_Key(email));
@@ -157,9 +159,14 @@ class AuthService {
         });
     };
     login = async (req, res, next) => {
-        let { email, password } = req.body;
+        let { email, password, fcm } = req.body;
         const user = await this._userModel.findOne({
-            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local, paranoid: true },
+            filter: {
+                email,
+                confirmed: true,
+                provider: user_enum_1.ProviderEnum.local,
+                paranoid: true,
+            },
         });
         if (!user) {
             throw new global_error_handling_1.AppError("Invalid email or password, please check your credentials and try again", 401);
@@ -181,6 +188,17 @@ class AuthService {
             secret_key: config_service_1.REFRESH_TOKEN_SECRET_KEY,
             options: { expiresIn: "1y", jwtid },
         });
+        if (fcm) {
+            await this._redisService.addFCM({ userId: user._id, FCMToken: fcm });
+            const fcmTokens = await this._redisService.getFCMs(user._id);
+            await this._notificationService.sendNotifications({
+                tokens: fcmTokens,
+                data: {
+                    title: `Welcome Back ${user.userName}`,
+                    body: `We Detected a Login to Your Account, At ${new Date()} If This Wasn't You, Please Secure Your Account`,
+                },
+            });
+        }
         res.status(200).json({ message: "Login successful", token, refreshToken });
     };
     refreshToken = async (req, res, next) => {
@@ -224,7 +242,12 @@ class AuthService {
     forgotPassword = async (req, res, next) => {
         const { email } = req.body;
         const user = await this._userModel.findOne({
-            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local, paranoid: true },
+            filter: {
+                email,
+                confirmed: true,
+                provider: user_enum_1.ProviderEnum.local,
+                paranoid: true,
+            },
         });
         if (!user) {
             throw new global_error_handling_1.AppError("User Not Found, please check the email and try again", 404);
@@ -247,7 +270,12 @@ class AuthService {
     resetPassword = async (req, res, next) => {
         let { email, OTP, newPassword } = req.body;
         const user = await this._userModel.findOne({
-            filter: { email, confirmed: true, provider: user_enum_1.ProviderEnum.local, paranoid: true },
+            filter: {
+                email,
+                confirmed: true,
+                provider: user_enum_1.ProviderEnum.local,
+                paranoid: true,
+            },
         });
         if (!user) {
             throw new global_error_handling_1.AppError("User Not Found, please check the email and try again", 404);

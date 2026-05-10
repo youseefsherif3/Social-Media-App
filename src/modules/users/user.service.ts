@@ -6,6 +6,8 @@ import { AppError } from "../../common/utils/global_error_handling";
 import UserRepository from "../../DB/repositories/user.repository ";
 import { S3Service } from "../../common/service/s3.service";
 import { pipeline } from "node:stream/promises";
+import notificationService from "../../common/service/notification.service";
+
 
 //* AuthService class to handle authentication-related operations such as sign-up, login, etc
 class UserService {
@@ -42,11 +44,6 @@ class UserService {
       fileName,
       ContentType,
       path: `Users/${request?.user?._id}`,
-    });
-
-    await this._userModel.findOneAndUpdate({
-      filter: { _id: request?.user?._id },
-      update: { profileImage: Key },
     });
 
     res.status(200).json({

@@ -39,17 +39,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_service_1 = __importDefault(require("./auth.service"));
 const validation_1 = require("../../common/middleware/validation");
-const userValidation = __importStar(require("./auth.validation"));
+const authValidation = __importStar(require("./auth.validation"));
 const authentication_1 = __importDefault(require("../../common/middleware/authentication"));
 const authRouter = (0, express_1.Router)();
-authRouter.post("/signUp", (0, validation_1.validation)(userValidation.signUpSchema), auth_service_1.default.signUp);
+authRouter.post("/signUp", (0, validation_1.validation)(authValidation
+    .signUpSchema), auth_service_1.default.signUp);
 authRouter.post("/signUp/google", auth_service_1.default.signUpWithGoogle);
-authRouter.patch("/confirm-email", (0, validation_1.validation)(userValidation.confirmEmailSchema), auth_service_1.default.confirmEmail);
-authRouter.patch("/resend-otp", (0, validation_1.validation)(userValidation.resendOTPSchema), auth_service_1.default.resendOTP);
-authRouter.post("/login", (0, validation_1.validation)(userValidation.loginSchema), auth_service_1.default.login);
+authRouter.patch("/confirm-email", (0, validation_1.validation)(authValidation
+    .confirmEmailSchema), auth_service_1.default.confirmEmail);
+authRouter.patch("/resend-otp", (0, validation_1.validation)(authValidation
+    .resendOTPSchema), auth_service_1.default.resendOTP);
+authRouter.post("/login", (0, validation_1.validation)(authValidation
+    .loginSchema), auth_service_1.default.login);
 authRouter.get("/refresh-token", auth_service_1.default.refreshToken);
-authRouter.patch("/update-password", authentication_1.default.authentication, (0, validation_1.validation)(userValidation.updatePasswordSchema), auth_service_1.default.updatePassword);
+authRouter.patch("/update-password", authentication_1.default.authentication, (0, validation_1.validation)(authValidation
+    .updatePasswordSchema), auth_service_1.default.updatePassword);
 authRouter.post("/forgot-password", auth_service_1.default.forgotPassword);
-authRouter.post("/reset-password", (0, validation_1.validation)(userValidation.resetPasswordSchema), auth_service_1.default.resetPassword);
+authRouter.post("/reset-password", (0, validation_1.validation)(authValidation
+    .resetPasswordSchema), auth_service_1.default.resetPassword);
 authRouter.post("/logout", authentication_1.default.authentication, auth_service_1.default.logout);
 exports.default = authRouter;
