@@ -24,3 +24,8 @@ export enum DeleteEnum {
   soft = "soft",
   hard = "hard",
 }
+
+export enum OnModelEnum {
+  post = "Post",
+  comment = "Comment",
+}

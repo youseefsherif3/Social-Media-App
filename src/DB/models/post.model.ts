@@ -82,9 +82,16 @@ const PostSchema = new mongoose.Schema<IPost>(
 );
 
 //* Adding a pre 'findOne' middleware to handle soft deletion by checking the 'paranoid' query parameter
-PostSchema.pre("find", function() {
+PostSchema.pre("find", function () {
   this.where({ IsDeleted: false });
-})
+});
+
+//* Adding a virtual field 'comments' to the Post schema to establish a relationship with the Comment model
+PostSchema.virtual("comments", {
+  ref: "Comment",
+  localField: "_id",
+  foreignField: "refId",
+});
 
 //* Creating the Post model based on the schema
 const PostModel =

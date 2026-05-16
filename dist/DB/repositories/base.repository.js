@@ -14,8 +14,13 @@ class BaseRepository {
     async find({ filter, projection, options, }) {
         return this.model.find(filter, projection, options);
     }
-    async findOne({ filter, projection, }) {
-        return this.model.findOne(filter, projection);
+    async findOne({ filter, options, }) {
+        return this.model
+            .findOne(filter)
+            .populate(options?.populate)
+            .select(options?.select)
+            .sort(options?.sort)
+            .exec();
     }
     async findMany({ filter, projection, options, }) {
         return this.model

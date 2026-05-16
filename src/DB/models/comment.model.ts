@@ -1,20 +1,21 @@
 //* Import necessary modules and Types
 import mongoose, { Types } from "mongoose";
-import { ReactionEnum } from "../../common/enum/post.enum";
+import { OnModelEnum, ReactionEnum } from "../../common/enum/post.enum";
 
 //* Defining the IComment interface to represent the structure of a Comment document in MongoDB
 export interface IComment {
   content?: string;
+  folderId: string;
   attachments?: string[];
   createdBy: Types.ObjectId;
-  postId: Types.ObjectId;
+  refId: Types.ObjectId;
   tags?: Types.ObjectId[];
-  folderId: string;
   likes?: {
     userId: Types.ObjectId;
     reaction: ReactionEnum;
   }[];
   IsDeleted?: boolean;
+  onModel: OnModelEnum;
 }
 
 //* Defining the Comment schema using Mongoose
@@ -33,9 +34,9 @@ const CommentSchema = new mongoose.Schema<IComment>(
       ref: "User",
       required: true,
     },
-    postId: {
+    refId: {
       type: Types.ObjectId,
-      ref: "Post",
+      refPath: "onModel",
       required: true,
     },
     likes: [
@@ -60,6 +61,11 @@ const CommentSchema = new mongoose.Schema<IComment>(
     folderId: {
       type: String,
     },
+    onModel: {
+      type: String,
+      enum: OnModelEnum,
+      required: true,
+    },
     IsDeleted: {
       type: Boolean,
       default: false,
@@ -81,6 +87,13 @@ CommentSchema.pre("find", function () {
 
 CommentSchema.pre("findOne", function () {
   this.where({ IsDeleted: false });
+});
+
+//* Adding a virtual field 'replies' to the Comment schema
+CommentSchema.virtual("replies", {
+  ref: "Comment",
+  localField: "_id",
+  foreignField: "refId",
 });
 
 //* Creating the Comment model based on the schema

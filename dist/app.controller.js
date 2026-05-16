@@ -14,7 +14,8 @@ const connectionDB_1 = require("./DB/connectionDB");
 const redis_service_1 = __importDefault(require("./common/service/redis.service"));
 const user_controller_1 = __importDefault(require("./modules/users/user.controller"));
 const post_controller_1 = __importDefault(require("./modules/posts/post.controller"));
-const comment_controller_1 = __importDefault(require("./modules/comments/comment.controller"));
+const express_2 = require("graphql-http/lib/use/express");
+const graphql_1 = require("graphql");
 const app = (0, express_1.default)();
 const port = config_service_1.PORT;
 const bootstrap = () => {
@@ -37,7 +38,56 @@ const bootstrap = () => {
     app.use("/auth", auth_controller_1.default);
     app.use("/users", user_controller_1.default);
     app.use("/posts", post_controller_1.default);
-    app.use("/comments", comment_controller_1.default);
+    const users = [
+        {
+            id: 1,
+            name: "John Doe",
+            age: 30,
+        },
+        {
+            id: 2,
+            name: "Jane Smith",
+            age: 25,
+        },
+        {
+            id: 3,
+            name: "Alice Johnson",
+            age: 28,
+        },
+    ];
+    let QueryObject = new graphql_1.GraphQLObjectType({
+        name: "getUsers",
+        fields: {
+            id: { type: graphql_1.GraphQLInt },
+            name: { type: graphql_1.GraphQLString },
+            age: { type: graphql_1.GraphQLInt },
+        },
+    });
+    const schema = new graphql_1.GraphQLSchema({
+        query: new graphql_1.GraphQLObjectType({
+            name: "query",
+            fields: {
+                getUsers: {
+                    type: QueryObject,
+                    args: {
+                        id: { type: new graphql_1.GraphQLNonNull(graphql_1.GraphQLInt) },
+                    },
+                    resolve: (parent, args) => {
+                        const user = users.find((user) => user.id === args.id);
+                        if (!user) {
+                            throw new global_error_handling_1.AppError("User not found", 404);
+                        }
+                        return user;
+                    },
+                },
+                listUsers: {
+                    type: new graphql_1.GraphQLList(QueryObject),
+                    resolve: () => users,
+                },
+            },
+        }),
+    });
+    app.use("/graphql", (0, express_2.createHandler)({ schema }));
     app.post("/send-notification", async (req, res, next) => {
         console.log("Sending notification...", req.body.token);
     });

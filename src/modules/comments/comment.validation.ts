@@ -1,6 +1,6 @@
 //* Importing necessary modules and types
 import * as z from "zod";
-import { ReactionEnum } from "../../common/enum/post.enum";
+import { OnModelEnum, ReactionEnum } from "../../common/enum/post.enum";
 import { generalRules } from "../../common/utils/general.rules";
 
 //* Validation schema for creating a comment
@@ -10,7 +10,7 @@ export const createCommentSchema = {
       content: z.string().optional(),
       attachments: z.array(generalRules.file).optional(),
       tags: z.array(generalRules.id).optional(),
-      postId: generalRules.id, // Ensure postId is provided to link the comment
+      onModel: z.enum(OnModelEnum),
     })
     .superRefine((args, ctx) => {
       //* Custom validation to ensure that either content or attachments are provided when creating a comment
@@ -34,6 +34,45 @@ export const createCommentSchema = {
         }
       }
     }),
+
+  params: z.object({
+    postId: generalRules.id,
+    commentId: generalRules.id.optional(),
+  }),
+};
+
+//* Validation schema for replying to a comment
+export const replyCommentSchema = {
+  body: z
+    .object({
+      content: z.string().optional(),
+      attachments: z.array(generalRules.file).optional(),
+      tags: z.array(generalRules.id).optional(),
+    })
+    .superRefine((args, ctx) => {
+      if (!args.content && !args.attachments?.length) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["content"],
+          message: "Either content or attachments must be provided",
+        });
+      }
+
+      if (args?.tags) {
+        const uniqueTags = new Set(args.tags);
+        if (args.tags.length !== uniqueTags.size) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["tags"],
+            message: "Duplicate tags are not allowed",
+          });
+        }
+      }
+    }),
+  params: z.object({
+    postId: generalRules.id,
+    commentId: generalRules.id,
+  }),
 };
 
 //* Validation schema for liking a comment

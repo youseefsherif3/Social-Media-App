@@ -1,5 +1,5 @@
-import { randomUUID } from "crypto";
 //* Importing necessary modules and types
+import { randomUUID } from "crypto";
 import { Request, Response, NextFunction } from "express";
 import { HydratedDocument, Model, Types } from "mongoose";
 import CommentRepository from "../../DB/repositories/comment.repository";
@@ -10,8 +10,15 @@ import redisService from "../../common/service/redis.service";
 import notificationService from "../../common/service/notification.service";
 import { ICreateCommentType, IUpdateCommentType } from "./comment.validation";
 import { AppError } from "../../common/utils/global_error_handling";
-import { AllowCommentEnum } from "../../common/enum/post.enum";
+import {
+  AllowCommentEnum,
+  AvailabilityEnum,
+  OnModelEnum,
+} from "../../common/enum/post.enum";
 import { Store_Enum } from "../../common/enum/multer.enum";
+import { AvailabilityPost } from "../../common/utils/post.utils";
+import { IPost } from "../../DB/models/post.model";
+import { IComment } from "../../DB/models/comment.model";
 
 //* CommentService class to handle comment-related operations such as create, update, like, etc
 class CommentService {
@@ -27,22 +34,60 @@ class CommentService {
 
   //* The createComment method to handle the logic for creating a new comment
   createComment = async (req: Request, res: Response, next: NextFunction) => {
-    const { content, postId, tags }: ICreateCommentType = req.body;
+    const { content, tags, onModel }: ICreateCommentType = req.body;
+    const { postId, commentId } = req.params;
     const request = req as any;
 
-    //* Check if the post exists and allows comments
-    const post = await this._postModel.findOne({
-      filter: {
-        _id: postId,
-      },
-    });
+    let doc: HydratedDocument<IPost | IComment> | null = null;
 
-    if (!post) {
-      throw new AppError("Post not found Please check the postId", 404);
+    if (onModel == OnModelEnum.post && !commentId) {
+      //* Check if the post exists and allows comments
+      doc = await this._postModel.findOne({
+        filter: {
+          _id: postId,
+          $or: [AvailabilityPost(req)],
+        },
+      });
+
+      if (!doc) {
+        throw new AppError("Post not found Please check the postId", 404);
+      }
+
+      if (doc.allowComment === AllowCommentEnum.deny) {
+        throw new AppError("Comments are not allowed on this post", 403);
+      }
+    } else if (onModel == OnModelEnum.comment && commentId) {
+      doc = await this._commentRepository.findOne({
+        filter: {
+          _id: commentId,
+          refId: postId!,
+        },
+        options: {
+          populate: [
+            {
+              path: "refId",
+              match: {
+                $or: [AvailabilityPost(req)],
+                allowComment: AllowCommentEnum.allow,
+              },
+            },
+          ],
+        },
+      });
+
+      if (!doc?.refId) {
+        throw new AppError(
+          "Comment not found or the parent post does not allow comments, Please check the commentId and postId",
+          404,
+        );
+      }
     }
 
-    if (post.allowComment === AllowCommentEnum.deny) {
-      throw new AppError("Comments are not allowed on this post", 403);
+    if (!doc) {
+      throw new AppError(
+        "The parent document for the comment was not found, Please check the provided data and try again",
+        404,
+      );
     }
 
     let mentions: Types.ObjectId[] = [];
@@ -78,7 +123,7 @@ class CommentService {
     if (req?.files) {
       urls = await this._S3Service.uploadFiles({
         files: req.files as Express.Multer.File[],
-        path: `users/${request?.user?._id}/comments/${folderId}`,
+        path: `users/${request?.user?._id}/posts/${doc?.folderId}/comments/${folderId}`,
         store_type: Store_Enum.memory,
       });
     }
@@ -86,11 +131,12 @@ class CommentService {
     //* Create the comment in the database using the CommentRepository
     const comment = await this._commentRepository.create({
       attachments: urls,
-      content: content!,
+      content: content || "",
       createdBy: request?.user?._id,
-      postId: post._id,
+      refId: doc?._id!,
       tags: mentions,
       folderId,
+      onModel,
     });
 
     if (!comment) {
@@ -320,7 +366,7 @@ class CommentService {
       page: request?.query?.page,
       limit: request?.query?.limit,
       search: {
-        postId: postId as string, 
+        postId: postId as string,
         ...(request.query.search
           ? {
               $or: [

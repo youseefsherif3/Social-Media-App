@@ -42,12 +42,18 @@ abstract class BaseRepository<TDocument> {
   //* Method to find a document by a specific field and value
   async findOne({
     filter,
-    projection,
+    options,
   }: {
     filter: QueryFilter<TDocument>;
     projection?: ProjectionType<TDocument>;
+    options?: QueryOptions<TDocument>;
   }): Promise<HydratedDocument<TDocument> | null> {
-    return this.model.findOne(filter, projection);
+    return this.model
+      .findOne(filter)
+      .populate(options?.populate as PopulateOptions | PopulateOptions[])
+      .select(options?.select as ProjectionType<TDocument>)
+      .sort(options?.sort)
+      .exec();
   }
 
   //* Method to find multiple documents based on a filter and optional projection

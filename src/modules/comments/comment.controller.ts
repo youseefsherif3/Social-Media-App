@@ -8,7 +8,7 @@ import * as commentValidation from "./comment.validation";
 import CommentService from "./comment.service";
 
 //* Creating a new router object
-const commentRouter = Router();
+const commentRouter = Router({ mergeParams: true });
 
 //* The Create Comment API endpoint
 commentRouter.post(
@@ -18,6 +18,15 @@ commentRouter.post(
   validation(commentValidation.createCommentSchema),
   CommentService.createComment,
 );
+
+//* The Reply to Comment API endpoint
+// commentRouter.post(
+//   "/reply-comment/:commentId",
+//   AuthenticationMiddleware.authentication,
+//   multerCloud({ store_type: Store_Enum.memory }).array("attachments"),
+//   validation(commentValidation.replyCommentSchema),
+//   CommentService.createReply,
+// );
 
 //* The Like Comment API endpoint
 commentRouter.patch(
@@ -46,7 +55,7 @@ commentRouter.delete(
 
 //* The Get Comments for a Post API endpoint
 commentRouter.get(
-  "/get-comments/:postId",
+  "/get-comments",
   AuthenticationMiddleware.authentication,
   validation(commentValidation.getCommentsSchema),
   CommentService.getComments,

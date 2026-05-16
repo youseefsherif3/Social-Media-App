@@ -16,6 +16,16 @@ import userModel from "./DB/models/user.model";
 import userRouter from "./modules/users/user.controller";
 import postRouter from "./modules/posts/post.controller";
 import commentRouter from "./modules/comments/comment.controller";
+import { createHandler } from "graphql-http/lib/use/express";
+import {
+  GraphQLSchema,
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLInt,
+  GraphQLNonNull,
+  GraphQLList,
+} from "graphql";
+import id from "zod/v4/locales/id.js";
 
 //* Setting up application and port
 const app: express.Application = express();
@@ -61,12 +71,66 @@ const bootstrap = () => {
   //* Using the post router for handling post-related routes
   app.use("/posts", postRouter);
 
-  //* Using the comment router for handling comment-related routes
-  app.use("/comments", commentRouter);
+  const users = [
+    {
+      id: 1,
+      name: "John Doe",
+      age: 30,
+    },
+    {
+      id: 2,
+      name: "Jane Smith",
+      age: 25,
+    },
+    {
+      id: 3,
+      name: "Alice Johnson",
+      age: 28,
+    },
+  ];
 
-  app.post("/send-notification", async (req: Request, res: Response, next: NextFunction) => {
-    console.log("Sending notification..." , req.body.token);
+  let QueryObject = new GraphQLObjectType({
+    name: "getUsers",
+    fields: {
+      id: { type: GraphQLInt },
+      name: { type: GraphQLString },
+      age: { type: GraphQLInt },
+    },
   });
+
+  const schema = new GraphQLSchema({
+    query: new GraphQLObjectType({
+      name: "query",
+      fields: {
+        getUsers: {
+          type: QueryObject,
+          args: {
+            id: { type: new GraphQLNonNull(GraphQLInt) },
+          },
+          resolve: (parent, args) => {
+            const user = users.find((user) => user.id === args.id);
+            if (!user) {
+              throw new AppError("User not found", 404);
+            }
+            return user;
+          },
+        },
+        listUsers: {
+          type: new GraphQLList(QueryObject),
+          resolve: () => users,
+        },
+      },
+    }),
+  });
+
+  app.use("/graphql", createHandler({ schema }));
+
+  app.post(
+    "/send-notification",
+    async (req: Request, res: Response, next: NextFunction) => {
+      console.log("Sending notification...", req.body.token);
+    },
+  );
 
   //* Invalid route handling
   app.use("{/*demo}", (req: Request, res: Response, next: NextFunction) => {

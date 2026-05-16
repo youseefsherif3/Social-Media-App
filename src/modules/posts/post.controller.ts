@@ -6,9 +6,13 @@ import { validation } from "../../common/middleware/validation";
 import AuthenticationMiddleware from "../../common/middleware/authentication";
 import multerCloud from "../../common/middleware/multer.cloud";
 import { Store_Enum } from "../../common/enum/multer.enum";
+import commentRouter from "../comments/comment.controller";
 
 //* Creating a new router object
 const postRouter = Router();
+
+//* Mounting the comment router on the post router to handle comment-related routes for specific posts
+postRouter.use("/:postId{create-reply/:commentId}" , commentRouter)
 
 //* The Create Post API endpoint
 postRouter.post(
